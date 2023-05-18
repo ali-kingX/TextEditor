@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Code Editor</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/codemirror.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/addon/hint/show-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/addon/hint/javascript-hint.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/addon/hint/show-hint.min.css" />
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #333;
+    }
+
+    .toolbar {
+      background-color: #222;
+      color: white;
+      height: 50px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+    }
+
+    .toolbar input[type="text"] {
+      height: 30px;
+      padding: 5px;
+      font-size: 14px;
+      width: 200px;
+      margin-right: 10px;
+    }
+
+    .toolbar button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-block;
+      text-align: center;
+      text-decoration: none;
+      transition: background-color 0.3s;
+    }
+
+    .toolbar button:hover {
+      background-color: #0069d9;
+    }
+
+    .CodeMirror {
+      height: calc(100% - 100px);
+      width: 100%;
+      background-color: #333;
+      position: absolute;
+      top: 50px;
+      bottom: 50px;
+      left: 0;
+      right: 0;
+    }
+
+    .CodeMirror-gutters {
+      background-color: #333;
+      color: #333;
+    }
+
+    .CodeMirror-lineNumbers {
+      color: white;
+    }
+
+    #output {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background-color: #222;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="toolbar">
+    <input type="text" id="filename" placeholder="Filename">
+    <button id="run-button">Run</button>
+    <button id="download-button" style="display: none;">Download</button>
+  </div>
+  <textarea id="code"></textarea>
+  <div id="output">
+    Output will be displayed here
+  </div>
+  <script>
+    var initialCode = Array(42).fill('\n').join('');
+    var editor = CodeMirror(document.body, {
+      mode: "javascript",
+      value: initialCode,
+      lineNumbers: true,
+      autofocus: true,
+      extraKeys: { "Ctrl-Space": "autocomplete" },
+      viewportMargin: Infinity,
+      lineWrapping: true
+    });
+
+    var runButton = document.getElementById("run-button");
+    var downloadButton = document.getElementById("download-button");
+    var filenameInput = document.getElementById("filename");
+
+    function displayOutput(data) {
+      if (data === "") {
+        output.innerHTML = " ";
+      } else {
+        output.innerHTML = data;
+      }
+    }
+
+    runButton.addEventListener("click", function () {
+      output.innerHTML = "Running...";
+      var code = editor.getValue();
+
+      // Redirect console output to a variable
+      var consoleOutput = "";
+      var oldConsoleLog = console.log;
+      console.log = function (message) {
+        if (typeof message == 'object') {
+          consoleOutput += (JSON && JSON.stringify ? JSON.stringify(message) : message) + '<br />';
+        } else {
+          consoleOutput += message + '<br />';
+        }
+      }
+
+      try {
+        var result = eval(code);
+        if (result !== undefined) {
+          displayOutput(consoleOutput + result);
+        } else {
+          displayOutput(consoleOutput);
+        }
+      } catch (error) {
+        displayOutput(consoleOutput + error);
+      }
+
+      // Restore console.log() function
+      console.log = oldConsoleLog;
+
+      // Show the download button
+      downloadButton.style.display = "inline-block";
+    });
+
+    downloadButton.addEventListener("click", function () {
+      var code = editor.getValue();
+      var filename = filenameInput.value || "code.js";
+      var blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+      var downloadLink = document.createElement("a");
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = filename;
+      downloadLink.click();
+    });
+  </script>
+</body>
+
+</html>
